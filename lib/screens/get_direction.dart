@@ -365,6 +365,7 @@ class BusScheduleCard extends StatelessWidget {
                               directionDetail: schedule.detail,
                               startLocation: schedule.startLocation,
                               endLocation: schedule.endLocation,
+                              fare: schedule.fare,
                             )),
                   );
                 },
