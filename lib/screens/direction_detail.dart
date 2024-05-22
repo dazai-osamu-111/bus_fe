@@ -163,9 +163,9 @@ class _DirectionDetailScreenState extends State<DirectionDetailScreen> {
         for (int j = i + 1; j < transitStepsDetail.length - 1; j++) {
           if (transitStepsDetail[j]['travelMode'] == 'WALK') {
             transitStepsDetail[i]['walkTime'] +=
-                (transitStepsDetail[i]['walkTime'] as int);
+                (transitStepsDetail[j]['walkTime'] as int);
             transitStepsDetail[i]['distance'] +=
-                (transitStepsDetail[i]['distance'] as int);
+                (transitStepsDetail[j]['distance'] as int);
           } else {
             i = j - 1;
             break;
