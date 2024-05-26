@@ -137,6 +137,120 @@ Widget routeDetailHeader(
                     ),
                   ),
                   onPressed: () {
+                    
+                  },
+                  child: Text('Mua vé'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+Widget routeDetailHeaderForDirection(
+    String combinedTimeString,
+    String travelTimeInMinutes,
+    String busStopDepartureTime,
+    String startStationInstruction,
+    List<dynamic> transitSteps,
+    String fare,
+    int walkDuration) {
+  // get current time and directionDetail["duration"] to calculate the arrival time, convert to string
+  walkDuration = (walkDuration / 60).round();
+
+  return Padding(
+    padding: EdgeInsets.all(0),
+    child: Card(
+      // elevation: 4.0, // Độ cao của shadow
+      color: Colors.white, // Màu nền của thẻ
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.zero, // Bo tròn các góc
+      ),
+      child: Container(
+        width: 400, // max size of the card
+        padding: EdgeInsets.only(
+            top: 16.0,
+            right: 16.0,
+            left: 16.0,
+            bottom: 0), // Padding bên trong thẻ
+        child: Column(
+          mainAxisSize:
+              MainAxisSize.min, // Đảm bảo column chiếm không gian tối thiểu
+          children: <Widget>[
+            Row(
+              mainAxisAlignment: MainAxisAlignment
+                  .spaceBetween, // Căn lề các phần tử ở hai bên
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  children: [
+                    Text(
+                      combinedTimeString,
+                      style: TextStyle(fontSize: 20),
+                    ),
+                    Text(
+                      travelTimeInMinutes,
+                      style:
+                          TextStyle(fontSize: 20, fontWeight: FontWeight.w300),
+                    ),
+                  ],
+                ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.directions_walk, size: 20), // Biểu tượng xe
+                    SizedBox(width: 5), // Khoảng cách giữa các icon
+                    Icon(Icons.directions_bus, size: 20), // Biểu tượng bus
+                  ],
+                ),
+              ],
+            ),
+            getDirectionSummaryWidget(transitSteps),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                      '${busStopDepartureTime} từ ${startStationInstruction}',
+                      style:
+                          TextStyle(fontSize: 14, fontWeight: FontWeight.w300)),
+                ),
+              ],
+            ),
+            SizedBox(height: 4), // Khoảng cách nhỏ hơn
+            Row(
+              mainAxisAlignment: MainAxisAlignment
+                  .spaceBetween, // Căn chỉnh các phần tử ở hai bên
+              children: [
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(fare,
+                        style: TextStyle(fontSize: 14, color: Colors.black54)),
+                    SizedBox(width: 24),
+                    Icon(Icons.directions_walk, size: 16),
+                    Text(
+                      '${walkDuration} p',
+                      style: TextStyle(fontSize: 14, color: Colors.black54),
+                    ),
+                  ],
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    textStyle: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  onPressed: () {
                     // Xử lý sự kiện khi nút được nhấn
                     print('Mua vé button pressed');
                   },
@@ -150,6 +264,7 @@ Widget routeDetailHeader(
     ),
   );
 }
+
 
 Widget timeLineTileStart(String time, String location) {
   String locationHeader = location.split(',')[0];
