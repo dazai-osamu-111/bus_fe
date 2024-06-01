@@ -1,4 +1,6 @@
 import 'dart:convert';
+import 'dart:ffi';
+import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:bus_management/screens/direction_detail.dart';
@@ -272,6 +274,7 @@ class _GetDirectionScreen extends State<GetDirectionScreen> {
                 ["transitDetails"]["transitLine"]["nameShort"];
             var startLocation = route["legs"][0]["steps"][stepStartTransitIndex]
                 ["transitDetails"]["stopDetails"]["departureStop"]["name"];
+
             return BusSchedule(
               time:
                   '${currentTime.hour}:${currentTime.minute} - ${endTime.hour}:${endTime.minute}',
@@ -358,6 +361,8 @@ class BusScheduleCard extends StatelessWidget {
               alignment: Alignment.centerRight,
               child: ElevatedButton(
                 onPressed: () {
+                  _sendBusStationInfo(schedule.detail);
+                  _sendBusInfo(schedule.detail);
                   Navigator.push(
                     context,
                     MaterialPageRoute(
@@ -376,5 +381,99 @@ class BusScheduleCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  void _sendBusStationInfo(List<dynamic> legs) async {
+    var url = Uri.parse('http://54.255.138.175:8000/add_bus_station');
+    var response;
+    var location;
+    var longitude;
+    var latitude;
+    List<dynamic> steps = legs[0]['steps'];
+    for (var step in steps) {
+      if (step['travelMode'] == 'TRANSIT') {
+        location =
+            step['transitDetails']['stopDetails']['departureStop']['name'];
+        longitude = step['transitDetails']['stopDetails']['departureStop']
+            ['location']['latLng']['longitude'];
+        latitude = step['transitDetails']['stopDetails']['departureStop']
+            ['location']['latLng']['latitude'];
+        response = await http.post(url,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              "name": location,
+              "longitude": longitude,
+              "latitude": latitude
+            }));
+        if (response.statusCode == 200) {
+          print('Bus station added successfully');
+        } else {
+          print('Failed to add bus station');
+        }
+        location = step['transitDetails']['stopDetails']['arrivalStop']['name'];
+        longitude = step['transitDetails']['stopDetails']['arrivalStop']
+            ['location']['latLng']['longitude'];
+        latitude = step['transitDetails']['stopDetails']['departureStop']
+            ['location']['latLng']['latitude'];
+        response = await http.post(url,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode({
+              "name": location,
+              "longitude": longitude,
+              "latitude": latitude
+            }));
+        if (response.statusCode == 200) {
+          print('Bus station added successfully');
+        } else {
+          print('Failed to add bus station');
+        }
+      }
+    }
+  }
+
+  String makeBusDriverName() {
+    final random = Random();
+
+    // Tạo số ngẫu nhiên cho phần xx (hai chữ số)
+    int part1 = random.nextInt(100); // Giá trị từ 0 đến 99
+
+    // Tạo số ngẫu nhiên cho phần xxx (ba chữ số)
+    int part2 = random.nextInt(1000); // Giá trị từ 0 đến 999
+
+    // Định dạng chuỗi theo kiểu 29Bxx.xxx
+    String busDriverName =
+        '29B${part1.toString().padLeft(2, '0')}.${part2.toString().padLeft(3, '0')}';
+
+    return busDriverName;
+  }
+
+  void _sendBusInfo(List<dynamic> legs) async {
+    var url = Uri.parse('http://54.255.138.175:8000/add_bus_information');
+    var response;
+    var bus_number;
+    var driver_name;
+    List<dynamic> steps = legs[0]['steps'];
+    for (var step in steps) {
+      if (step['travelMode'] == 'TRANSIT') {
+        bus_number = step['transitDetails']['transitLine']['nameShort'];
+        driver_name = makeBusDriverName();
+
+        response = await http.post(url,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: jsonEncode(
+                {"bus_number": bus_number, "driver_name": driver_name}));
+        if (response.statusCode == 200) {
+          print('Bus bus information added successfully');
+        } else {
+          print('Failed to add bus information');
+        }
+      }
+    }
   }
 }
