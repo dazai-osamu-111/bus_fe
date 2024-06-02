@@ -237,6 +237,7 @@ class _DirectionDetailScreenState extends State<DirectionDetailScreen> {
           Column(
         children: <Widget>[
           routeDetailHeader(
+              context,
               combinedTimeString,
               travelTimeInMinutes,
               busStopDepartureTime,

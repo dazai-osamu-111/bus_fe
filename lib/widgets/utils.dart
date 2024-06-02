@@ -1,5 +1,8 @@
-import 'package:flutter/cupertino.dart';
+import 'package:bus_management/screens/transaction.dart';
+import 'package:bus_management/widgets/transaction_detail_form.dart';
 import 'package:flutter/material.dart';
+
+import 'package:qr_flutter/qr_flutter.dart';
 
 Widget getDirectionSummaryWidget(List<dynamic> transitSteps) {
   List<Widget> rowChildren = [];
@@ -37,6 +40,7 @@ Widget getDirectionSummaryWidget(List<dynamic> transitSteps) {
 }
 
 Widget routeDetailHeader(
+    BuildContext context,
     String combinedTimeString,
     String travelTimeInMinutes,
     String busStopDepartureTime,
@@ -137,7 +141,21 @@ Widget routeDetailHeader(
                     ),
                   ),
                   onPressed: () {
-                    
+                    showDialog(
+                      context: context,
+                      builder: (BuildContext context) {
+                        return AlertDialog(
+                          title: Text('Thông tin giao dịch'),
+                          content: TransactionDetailForm(
+                            fare: fare,
+                            busStopDepartureTime: busStopDepartureTime,
+                            busStopArrivalTime: combinedTimeString,
+                            busNumber: '123',
+                            travelTimeInMinutes: travelTimeInMinutes,
+                          ),
+                        );
+                      },
+                    );
                   },
                   child: Text('Mua vé'),
                 ),
@@ -264,7 +282,6 @@ Widget routeDetailHeaderForDirection(
     ),
   );
 }
-
 
 Widget timeLineTileStart(String time, String location) {
   String locationHeader = location.split(',')[0];
