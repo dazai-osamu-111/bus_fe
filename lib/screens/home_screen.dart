@@ -28,7 +28,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _selectedOption = "";
 
   bool _loggedIn = false;
-  String _phone = '';
+  String _email = '';
 
   @override
   void initState() {
@@ -40,22 +40,22 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _checkLoginStatus() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     bool loggedIn = prefs.getBool('loggedIn') ?? false;
-    String phone = prefs.getString('phone') ?? '';
+    String email = prefs.getString('email') ?? '';
 
     setState(() {
       _loggedIn = loggedIn;
-      _phone = phone;
+      _email = email;
     });
   }
 
   Future<void> _logout() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     await prefs.remove('loggedIn');
-    await prefs.remove('phone');
+    await prefs.remove('email');
 
     setState(() {
       _loggedIn = false;
-      _phone = '';
+      _email = '';
     });
   }
 
@@ -187,25 +187,24 @@ class _HomeScreenState extends State<HomeScreen> {
                   color: Colors.blue,
                 ),
                 child: _loggedIn
-                    ? Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          CircleAvatar(
-                            radius: 30,
-                            backgroundColor: Colors.grey.shade300,
-                            child: Icon(Icons.person,
-                                size: 40, color: Colors.white),
-                          ),
-                          SizedBox(height: 10),
-                          Text(
-                            _phone,
-                            style: TextStyle(color: Colors.white, fontSize: 18),
-                          ),
-                          Text(
-                            'Tài khoản điện thoại',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ],
+                    ? Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            CircleAvatar(
+                              radius: 30,
+                              backgroundColor: Colors.grey.shade300,
+                              child: Icon(Icons.person,
+                                  size: 40, color: Colors.white),
+                            ),
+                            SizedBox(height: 10),
+                            Text(
+                              _email,
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 18),
+                            ),
+                          ],
+                        ),
                       )
                     : Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

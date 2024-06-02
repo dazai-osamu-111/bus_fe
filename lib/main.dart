@@ -1,9 +1,14 @@
-
 import 'package:bus_management/screens/home_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
-void main() {
-  runApp(const MyApp());
+Future<void> main() async {
+  try {
+    await dotenv.load(fileName: ".env");
+    runApp(const MyApp());
+  } catch (e) {
+    print(e);
+  }
 }
 
 class MyApp extends StatelessWidget {

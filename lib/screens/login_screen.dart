@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:pin_code_fields/pin_code_fields.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -9,33 +12,59 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final TextEditingController _phoneController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _otpController = TextEditingController();
   bool _otpSent = false;
+  final String baseUrl = dotenv.env['BASE_URL'] ?? 'https://defaultapi.com/';
   String _verificationId = '';
 
   Future<void> _sendOtp() async {
-    String phone = _phoneController.text;
+    String email = _emailController.text;
 
-    // Gọi API giả lập để gửi mã OTP
-    Future.delayed(Duration(seconds: 2), () {
+    final response = await http.post(
+      Uri.parse('${baseUrl}/request-otp'), // URL giả lập
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'email': email,
+      }),
+    );
+
+    if (response.statusCode == 200) {
       setState(() {
         _otpSent = true;
-        _verificationId = '123456'; // Giả lập mã OTP
+        _verificationId = '123456'; // Giả lập mã OTP từ response
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('OTP đã được gửi tới $phone')),
+        SnackBar(content: Text('OTP đã được gửi tới $email')),
       );
-    });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Không thể gửi OTP. Vui lòng thử lại.')),
+      );
+    }
   }
 
   Future<void> _verifyOtp() async {
     String otp = _otpController.text;
+    String email = _emailController.text;
 
-    if (otp == _verificationId) {
+    final response = await http.post(
+      Uri.parse('${baseUrl}/verify-otp'), // URL giả lập
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'email': email,
+        'otp': otp,
+      }),
+    );
+
+    if (response.statusCode == 200) {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('loggedIn', true);
-      await prefs.setString('phone', _phoneController.text);
+      await prefs.setString('email', email);
 
       Navigator.of(context).pop(true); // Quay lại HomeScreen và báo thành công
     } else {
@@ -65,14 +94,14 @@ class _LoginScreenState extends State<LoginScreen> {
               Column(
                 children: [
                   TextField(
-                    controller: _phoneController,
+                    controller: _emailController,
                     decoration: InputDecoration(
-                      labelText: 'Số điện thoại',
+                      labelText: 'Email',
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                    keyboardType: TextInputType.phone,
+                    keyboardType: TextInputType.emailAddress,
                   ),
                   SizedBox(height: 20),
                   ElevatedButton(
@@ -80,7 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text('Nhận mã OTP'),
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      backgroundColor: Colors.blue, // Màu chữ nút
+                      backgroundColor: Colors.blue, // Màu nền nút
                       minimumSize: Size(double.infinity, 50), // Chiều rộng nút
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
@@ -93,7 +122,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Column(
                 children: [
                   Text(
-                    'Nhập mã OTP đã được gửi tới số điện thoại của bạn:',
+                    'Nhập mã OTP đã được gửi tới email của bạn:',
                     style: TextStyle(
                       fontSize: 16,
                     ),
@@ -120,7 +149,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: Text('Xác nhận mã OTP'),
                     style: ElevatedButton.styleFrom(
                       foregroundColor: Colors.white,
-                      backgroundColor: Colors.blue, // Màu chữ nút
+                      backgroundColor: Colors.blue, // Màu nền nút
                       minimumSize: Size(double.infinity, 50), // Chiều rộng nút
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
