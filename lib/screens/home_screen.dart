@@ -3,14 +3,17 @@ import 'dart:convert';
 
 import 'package:bus_management/screens/get_direction.dart';
 import 'package:bus_management/screens/search_screen.dart';
+import 'package:bus_management/screens/login_screen.dart'; // Import màn hình đăng nhập
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -23,6 +26,38 @@ class _HomeScreenState extends State<HomeScreen> {
 
   List _searchResults = []; // Khai báo biến _searchResults
   String _selectedOption = "";
+
+  bool _loggedIn = false;
+  String _phone = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _checkLoginStatus();
+    loadData();
+  }
+
+  Future<void> _checkLoginStatus() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    bool loggedIn = prefs.getBool('loggedIn') ?? false;
+    String phone = prefs.getString('phone') ?? '';
+
+    setState(() {
+      _loggedIn = loggedIn;
+      _phone = phone;
+    });
+  }
+
+  Future<void> _logout() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('loggedIn');
+    await prefs.remove('phone');
+
+    setState(() {
+      _loggedIn = false;
+      _phone = '';
+    });
+  }
 
   loadData() {
     getUserCurrentLocation().then((value) async {
@@ -129,12 +164,6 @@ class _HomeScreenState extends State<HomeScreen> {
   Map<PolylineId, Polyline> _polylines = {};
 
   @override
-  void initState() {
-    super.initState();
-    loadData();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
         appBar: AppBar(
@@ -148,6 +177,137 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
           backgroundColor: Colors.blue,
           centerTitle: true,
+        ),
+        drawer: Drawer(
+          child: ListView(
+            padding: EdgeInsets.zero,
+            children: <Widget>[
+              DrawerHeader(
+                decoration: BoxDecoration(
+                  color: Colors.blue,
+                ),
+                child: _loggedIn
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          CircleAvatar(
+                            radius: 30,
+                            backgroundColor: Colors.grey.shade300,
+                            child: Icon(Icons.person,
+                                size: 40, color: Colors.white),
+                          ),
+                          SizedBox(height: 10),
+                          Text(
+                            _phone,
+                            style: TextStyle(color: Colors.white, fontSize: 18),
+                          ),
+                          Text(
+                            'Tài khoản điện thoại',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      )
+                    : Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          TextButton(
+                            onPressed: () async {
+                              bool? result = await Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (context) => LoginScreen(),
+                                ),
+                              );
+                              if (result == true) {
+                                _checkLoginStatus();
+                              }
+                            },
+                            child: Text(
+                              'Đăng nhập',
+                              style:
+                                  TextStyle(color: Colors.white, fontSize: 18),
+                            ),
+                          ),
+                        ],
+                      ),
+              ),
+              _loggedIn
+                  ? ListTile(
+                      leading: Icon(Icons.logout),
+                      title: Text('Đăng xuất'),
+                      onTap: _logout,
+                    )
+                  : Container(),
+              ListTile(
+                leading: Icon(Icons.home),
+                title: Text('Trang chủ'),
+                onTap: () {
+                  // Xử lý khi chọn Trang chủ
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.search),
+                title: Text('Tra cứu'),
+                onTap: () {
+                  // Xử lý khi chọn Tra cứu
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.mail),
+                title: Text('Tin buýt'),
+                trailing: ClipOval(
+                  child: Container(
+                    color: Colors.red,
+                    width: 20,
+                    height: 20,
+                    child: Center(
+                      child: Text(
+                        '99+',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                  ),
+                ),
+                onTap: () {
+                  // Xử lý khi chọn Tin buýt
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.card_membership),
+                title: Text('Vé tháng'),
+                onTap: () {
+                  // Xử lý khi chọn Vé tháng
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.local_offer),
+                title: Text('Mua tem'),
+                onTap: () {
+                  // Xử lý khi chọn Mua tem
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.map),
+                title: Text('Tìm đường offline'),
+                onTap: () {
+                  // Xử lý khi chọn Tìm đường offline
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.feedback),
+                title: Text('Ý kiến KH'),
+                onTap: () {
+                  // Xử lý khi chọn Ý kiến KH
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.help),
+                title: Text('Trợ giúp'),
+                onTap: () {
+                  // Xử lý khi chọn Trợ giúp
+                },
+              ),
+            ],
+          ),
         ),
         body: Column(
           children: [
