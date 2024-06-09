@@ -1,8 +1,5 @@
 import 'package:bus_management/screens/transaction.dart';
-import 'package:bus_management/widgets/transaction_detail_form.dart';
 import 'package:flutter/material.dart';
-
-import 'package:qr_flutter/qr_flutter.dart';
 
 Widget getDirectionSummaryWidget(List<dynamic> transitSteps) {
   List<Widget> rowChildren = [];
@@ -47,9 +44,17 @@ Widget routeDetailHeader(
     String startStationInstruction,
     List<dynamic> transitSteps,
     String fare,
-    int walkDuration) {
+    int walkDuration, List ticketStationData) {
   // get current time and directionDetail["duration"] to calculate the arrival time, convert to string
   walkDuration = (walkDuration / 60).round();
+ List<dynamic> list_bus = [];
+  for (int i = 0; i < transitSteps.length; i++) {
+    var step = transitSteps[i];
+    if (step['travelMode'] == 'TRANSIT') {
+      list_bus.add(step['name']);
+    }
+  }
+  String busListString = list_bus.join(', ');
 
   return Padding(
     padding: EdgeInsets.all(0),
@@ -148,10 +153,8 @@ Widget routeDetailHeader(
                           title: Text('Thông tin giao dịch'),
                           content: TransactionDetailForm(
                             fare: fare,
-                            busStopDepartureTime: busStopDepartureTime,
-                            busStopArrivalTime: combinedTimeString,
-                            busNumber: '123',
-                            travelTimeInMinutes: travelTimeInMinutes,
+                            busListString: busListString,
+                            ticketStationData: ticketStationData,
                           ),
                         );
                       },

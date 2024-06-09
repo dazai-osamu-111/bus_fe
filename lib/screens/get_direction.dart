@@ -389,6 +389,7 @@ class BusScheduleCard extends StatelessWidget {
     var location;
     var longitude;
     var latitude;
+    var bus_number;
     List<dynamic> steps = legs[0]['steps'];
     for (var step in steps) {
       if (step['travelMode'] == 'TRANSIT') {
@@ -398,6 +399,7 @@ class BusScheduleCard extends StatelessWidget {
             ['location']['latLng']['longitude'];
         latitude = step['transitDetails']['stopDetails']['departureStop']
             ['location']['latLng']['latitude'];
+        bus_number = step['transitDetails']['transitLine']['nameShort'];
         response = await http.post(url,
             headers: {
               'Content-Type': 'application/json',
@@ -417,6 +419,7 @@ class BusScheduleCard extends StatelessWidget {
             ['location']['latLng']['longitude'];
         latitude = step['transitDetails']['stopDetails']['departureStop']
             ['location']['latLng']['latitude'];
+        bus_number = step['transitDetails']['transitLine']['nameShort'];
         response = await http.post(url,
             headers: {
               'Content-Type': 'application/json',
@@ -424,7 +427,8 @@ class BusScheduleCard extends StatelessWidget {
             body: jsonEncode({
               "name": location,
               "longitude": longitude,
-              "latitude": latitude
+              "latitude": latitude,
+              "bus_number": bus_number,
             }));
         if (response.statusCode == 200) {
           print('Bus station added successfully');

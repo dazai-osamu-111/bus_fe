@@ -1,3 +1,4 @@
+import 'package:bus_management/widgets/function_util.dart';
 import 'package:bus_management/widgets/utils.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
@@ -21,6 +22,34 @@ class DirectionDetailScreen extends StatefulWidget {
 }
 
 class _DirectionDetailScreenState extends State<DirectionDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    fetchData();
+  }
+
+  List<dynamic> ticketStationData = [];
+
+  Future<void> fetchData() async {
+    List steps = widget.directionDetail[0]['steps'];
+
+    for (var step in steps) {
+      if (step['travelMode'] == 'TRANSIT') {
+        int onBusStationId = await getStationId(
+            step['transitDetails']['stopDetails']['departureStop']['name']);
+        int offBusStationId = await getStationId(
+            step['transitDetails']['stopDetails']['arrivalStop']['name']);
+
+        Object data = {
+          "bus_number": step['transitDetails']['transitLine']['nameShort'],
+          "on_bus_station_id": onBusStationId,
+          "off_bus_station_id": offBusStationId,
+        };
+        ticketStationData.add(data);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     List directionDetail = widget.directionDetail;
@@ -244,7 +273,8 @@ class _DirectionDetailScreenState extends State<DirectionDetailScreen> {
               startStationInstruction,
               transitSteps,
               fare,
-              walkDuration),
+              walkDuration,
+              ticketStationData),
           SizedBox(
             height: 16,
           ),

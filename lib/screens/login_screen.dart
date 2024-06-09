@@ -65,6 +65,11 @@ class _LoginScreenState extends State<LoginScreen> {
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('loggedIn', true);
       await prefs.setString('email', email);
+      // Phân tích cú pháp response body từ JSON
+      final Map<String, dynamic> responseBody = jsonDecode(response.body);
+
+      // Lưu token vào SharedPreferences
+      await prefs.setString('token', responseBody['token']);
 
       Navigator.of(context).pop(true); // Quay lại HomeScreen và báo thành công
     } else {

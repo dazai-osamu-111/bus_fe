@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:bus_management/screens/get_direction.dart';
 import 'package:bus_management/screens/search_screen.dart';
 import 'package:bus_management/screens/login_screen.dart'; // Import màn hình đăng nhập
+import 'package:bus_management/screens/ticket_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -272,9 +273,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.card_membership),
-                title: Text('Vé tháng'),
+                title: Text('Vé của tôi'),
                 onTap: () {
-                  // Xử lý khi chọn Vé tháng
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => TicketScreen(
+                          userId: 1), // Thay thế bằng ID người dùng thật
+                    ),
+                  );
                 },
               ),
               ListTile(
