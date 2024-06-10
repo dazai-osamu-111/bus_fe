@@ -407,7 +407,8 @@ class BusScheduleCard extends StatelessWidget {
             body: jsonEncode({
               "name": location,
               "longitude": longitude,
-              "latitude": latitude
+              "latitude": latitude,
+              "bus_number": bus_number,
             }));
         if (response.statusCode == 200) {
           print('Bus station added successfully');

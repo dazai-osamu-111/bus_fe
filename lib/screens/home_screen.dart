@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:bus_management/screens/bus_information.dart';
+import 'package:bus_management/screens/deposit_screen.dart';
 import 'package:bus_management/screens/get_direction.dart';
 import 'package:bus_management/screens/search_screen.dart';
 import 'package:bus_management/screens/login_screen.dart'; // Import màn hình đăng nhập
@@ -285,16 +287,20 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               ListTile(
                 leading: Icon(Icons.local_offer),
-                title: Text('Mua tem'),
+                title: Text('Vé tháng'),
                 onTap: () {
                   // Xử lý khi chọn Mua tem
                 },
               ),
               ListTile(
-                leading: Icon(Icons.map),
-                title: Text('Tìm đường offline'),
+                leading: Icon(Icons.money),
+                title: Text('Nạp điểm'),
                 onTap: () {
-                  // Xử lý khi chọn Tìm đường offline
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => DepositScreen(),
+                    ),
+                  );
                 },
               ),
               ListTile(
@@ -324,6 +330,12 @@ class _HomeScreenState extends State<HomeScreen> {
                       setState(() {
                         _selectedOption = "X";
                       });
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TrackBusScreen(),
+                        ),
+                      );
                       // Xử lý thêm khi chọn Theo dõi xe
                     },
                     child: Container(

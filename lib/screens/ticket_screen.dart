@@ -149,7 +149,7 @@ class Ticket {
   String getStatusText() {
     switch (status) {
       case 0:
-        return 'Chưa dùng';
+        return 'Đã mua';
       case 1:
         return 'Đã dùng';
       case 2:
