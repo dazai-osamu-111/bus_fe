@@ -36,58 +36,6 @@ class _SearchScreen extends State<SearchScreen> {
         _sesssionToken = uuid.v4();
       });
     }
-
-    getSuggesion(_controller.text);
-  }
-
-  void getSuggesion(String input) async {
-    String kPLACES_API_KEY = "AIzaSyAnI_7dbzhe2FS7kr1lXvqXId2AIBvUXB8";
-    String baseURL =
-        'https://maps.googleapis.com/maps/api/place/autocomplete/json';
-    String request =
-        '$baseURL?input=$input&key=$kPLACES_API_KEY&sessiontoken=$_sesssionToken';
-
-    var response = await http.get(Uri.parse(request));
-
-    if (response.statusCode == 200) {
-      setState(() {
-        if (response.statusCode == 200) {
-          if (mounted) {
-            setState(() {
-              _placesList = jsonDecode(response.body.toString())['predictions'];
-              print(_placesList);
-            });
-          }
-        } else {
-          throw Exception('Failed to load data');
-        }
-        _placesList = jsonDecode(response.body.toString())['predictions'];
-        print(_placesList);
-      });
-    } else {
-      throw Exception('Failed to load data');
-    }
-  }
-
-  void getPlaceDetails(String placeId, String apiKey) async {
-    String url =
-        'https://maps.googleapis.com/maps/api/place/details/json?place_id=$placeId&fields=type&key=$apiKey';
-    var response = await http.get(Uri.parse(url));
-    if (response.statusCode == 200) {
-      var jsonResponse = jsonDecode(response.body.toString());
-      if (jsonResponse['status'] == 'OK') {
-        var types = jsonResponse['result']['types'];
-        if (types.contains('bus_station')) {
-          if (mounted) {
-            print(jsonResponse['result']);
-            setState(() {
-              _placesList
-                  .add(jsonResponse['result']); // Add the place to _placesList
-            });
-          }
-        }
-      }
-    }
   }
 
   @override

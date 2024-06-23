@@ -4,6 +4,7 @@ import 'dart:math';
 import 'dart:typed_data';
 
 import 'package:bus_management/screens/direction_detail.dart';
+import 'package:bus_management/widgets/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
@@ -346,139 +347,217 @@ class BusScheduleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(schedule.time),
-            Text(schedule.duration),
-            Text(schedule.busNumber),
-            Text(schedule.departure),
-            Text(schedule.fare),
-            Align(
-              alignment: Alignment.centerRight,
-              child: ElevatedButton(
-                onPressed: () {
-                  _sendBusStationInfo(schedule.detail);
-                  _sendBusInfo(schedule.detail);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                        builder: (context) => DirectionDetailScreen(
-                              directionDetail: schedule.detail,
-                              startLocation: schedule.startLocation,
-                              endLocation: schedule.endLocation,
-                              fare: schedule.fare,
-                            )),
-                  );
-                },
-                child: Text('Chi tiết'),
+    DateTime currentTime = DateTime.now();
+    int duration = int.parse(
+        RegExp(r'\d+').stringMatch(schedule.detail[0]["duration"]) ?? "0");
+    DateTime arrivalTime = currentTime.add(Duration(seconds: duration));
+    String arrivalTimeString =
+        '${arrivalTime.hour.toString().padLeft(2, '0')}:${arrivalTime.minute.toString().padLeft(2, '0')}';
+    String currentTimeString =
+        '${currentTime.hour.toString().padLeft(2, '0')}:${currentTime.minute.toString().padLeft(2, '0')}';
+    String combinedTimeString = '$currentTimeString - $arrivalTimeString ';
+    String travelTimeInMinutes = (duration / 60).toStringAsFixed(0);
+    travelTimeInMinutes = '(${travelTimeInMinutes} p)';
+
+    List<dynamic> steps = schedule.detail[0]['steps'];
+
+    String startStationInstruction = '';
+    String busStopDepartureTime = '';
+    List<dynamic> transitSteps = [];
+    int walkDuration = 0;
+
+    for (var step in steps) {
+      if (step['travelMode'] == 'TRANSIT') {
+        busStopDepartureTime = step['transitDetails']['localizedValues']
+            ['departureTime']['time']["text"];
+        startStationInstruction =
+            step['transitDetails']['stopDetails']['departureStop']['name'];
+        break;
+      }
+    }
+
+    for (var step in steps) {
+      String name = 'WALK';
+      if (transitSteps.isEmpty) {
+        if (step['travelMode'] == 'TRANSIT') {
+          name = step['transitDetails']['transitLine']['nameShort'];
+        }
+        Object travelInformation = {
+          "travelMode": step['travelMode'],
+          "name": name
+        };
+        transitSteps.add(travelInformation);
+      } else {
+        if (step['travelMode'] != transitSteps.last['travelMode']) {
+          name = 'WALK';
+          if (step['travelMode'] == 'TRANSIT') {
+            name = step['transitDetails']['transitLine']['nameShort'];
+          }
+          Object travelInformation = {
+            "travelMode": step['travelMode'],
+            "name": name
+          };
+          transitSteps.add(travelInformation);
+        } else {
+          if (step['travelMode'] == 'TRANSIT') {
+            name = step['transitDetails']['transitLine']['nameShort'];
+            Object travelInformation = {
+              "travelMode": step['travelMode'],
+              "name": name
+            };
+            transitSteps.add(travelInformation);
+          }
+        }
+      }
+    }
+
+    walkDuration = (walkDuration / 60).round();
+
+    return Padding(
+      padding: EdgeInsets.all(0),
+      child: Card(
+        // elevation: 4.0, // Độ cao của shadow
+        color: Colors.white, // Màu nền của thẻ
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.zero, // Bo tròn các góc
+        ),
+        child: Container(
+          width: 400, // max size of the card
+          padding: EdgeInsets.only(
+              top: 16.0,
+              right: 16.0,
+              left: 16.0,
+              bottom: 0), // Padding bên trong thẻ
+          child: Column(
+            mainAxisSize:
+                MainAxisSize.min, // Đảm bảo column chiếm không gian tối thiểu
+            children: <Widget>[
+              Row(
+                mainAxisAlignment: MainAxisAlignment
+                    .spaceBetween, // Căn lề các phần tử ở hai bên
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.start,
+                    children: [
+                      Text(
+                        combinedTimeString,
+                        style: TextStyle(fontSize: 20),
+                      ),
+                      Text(
+                        travelTimeInMinutes,
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.w300),
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.directions_walk, size: 20), // Biểu tượng xe
+                      SizedBox(width: 5), // Khoảng cách giữa các icon
+                      Icon(Icons.directions_bus, size: 20), // Biểu tượng bus
+                    ],
+                  ),
+                ],
               ),
-            ),
-          ],
+              getDirectionSummaryWidget(transitSteps),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                        '${busStopDepartureTime} từ ${startStationInstruction}',
+                        style: TextStyle(
+                            fontSize: 14, fontWeight: FontWeight.w300)),
+                  ),
+                ],
+              ),
+              SizedBox(height: 4), // Khoảng cách nhỏ hơn
+              Row(
+                mainAxisAlignment: MainAxisAlignment
+                    .spaceBetween, // Căn chỉnh các phần tử ở hai bên
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(schedule.fare,
+                          style:
+                              TextStyle(fontSize: 14, color: Colors.black54)),
+                      SizedBox(width: 24),
+                      Icon(Icons.directions_walk, size: 16),
+                      Text(
+                        '${walkDuration} p',
+                        style: TextStyle(fontSize: 14, color: Colors.black54),
+                      ),
+                    ],
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                      padding:
+                          EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      textStyle: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                            builder: (context) => DirectionDetailScreen(
+                                  directionDetail: schedule.detail,
+                                  startLocation: schedule.startLocation,
+                                  endLocation: schedule.endLocation,
+                                  fare: schedule.fare,
+                                )),
+                      );
+                    },
+                    child: Text('Chi tiết'),
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
-  }
 
-  void _sendBusStationInfo(List<dynamic> legs) async {
-    var url = Uri.parse('http://54.255.138.175:8000/add_bus_station');
-    var response;
-    var location;
-    var longitude;
-    var latitude;
-    var bus_number;
-    List<dynamic> steps = legs[0]['steps'];
-    for (var step in steps) {
-      if (step['travelMode'] == 'TRANSIT') {
-        location =
-            step['transitDetails']['stopDetails']['departureStop']['name'];
-        longitude = step['transitDetails']['stopDetails']['departureStop']
-            ['location']['latLng']['longitude'];
-        latitude = step['transitDetails']['stopDetails']['departureStop']
-            ['location']['latLng']['latitude'];
-        bus_number = step['transitDetails']['transitLine']['nameShort'];
-        response = await http.post(url,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              "name": location,
-              "longitude": longitude,
-              "latitude": latitude,
-              "bus_number": bus_number,
-            }));
-        if (response.statusCode == 200) {
-          print('Bus station added successfully');
-        } else {
-          print('Failed to add bus station');
-        }
-        location = step['transitDetails']['stopDetails']['arrivalStop']['name'];
-        longitude = step['transitDetails']['stopDetails']['arrivalStop']
-            ['location']['latLng']['longitude'];
-        latitude = step['transitDetails']['stopDetails']['departureStop']
-            ['location']['latLng']['latitude'];
-        bus_number = step['transitDetails']['transitLine']['nameShort'];
-        response = await http.post(url,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode({
-              "name": location,
-              "longitude": longitude,
-              "latitude": latitude,
-              "bus_number": bus_number,
-            }));
-        if (response.statusCode == 200) {
-          print('Bus station added successfully');
-        } else {
-          print('Failed to add bus station');
-        }
-      }
-    }
-  }
-
-  String makeBusDriverName() {
-    final random = Random();
-
-    // Tạo số ngẫu nhiên cho phần xx (hai chữ số)
-    int part1 = random.nextInt(100); // Giá trị từ 0 đến 99
-
-    // Tạo số ngẫu nhiên cho phần xxx (ba chữ số)
-    int part2 = random.nextInt(1000); // Giá trị từ 0 đến 999
-
-    // Định dạng chuỗi theo kiểu 29Bxx.xxx
-    String busDriverName =
-        '29B${part1.toString().padLeft(2, '0')}.${part2.toString().padLeft(3, '0')}';
-
-    return busDriverName;
-  }
-
-  void _sendBusInfo(List<dynamic> legs) async {
-    var url = Uri.parse('http://54.255.138.175:8000/add_bus_information');
-    var response;
-    var bus_number;
-    var driver_name;
-    List<dynamic> steps = legs[0]['steps'];
-    for (var step in steps) {
-      if (step['travelMode'] == 'TRANSIT') {
-        bus_number = step['transitDetails']['transitLine']['nameShort'];
-        driver_name = makeBusDriverName();
-
-        response = await http.post(url,
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: jsonEncode(
-                {"bus_number": bus_number, "driver_name": driver_name}));
-        if (response.statusCode == 200) {
-          print('Bus bus information added successfully');
-        } else {
-          print('Failed to add bus information');
-        }
-      }
-    }
+    // return Card(
+    //   child: Padding(
+    //     padding: const EdgeInsets.all(8.0),
+    //     child: Column(
+    //       crossAxisAlignment: CrossAxisAlignment.start,
+    //       children: [
+    //         Text(schedule.time),
+    //         Text(schedule.duration),
+    //         Text(schedule.busNumber),
+    //         Text(schedule.departure),
+    //         Text(schedule.fare),
+    //         Align(
+    //           alignment: Alignment.centerRight,
+    //           child: ElevatedButton(
+    // onPressed: () {
+    //   Navigator.push(
+    //     context,
+    //     MaterialPageRoute(
+    //         builder: (context) => DirectionDetailScreen(
+    //               directionDetail: schedule.detail,
+    //               startLocation: schedule.startLocation,
+    //               endLocation: schedule.endLocation,
+    //               fare: schedule.fare,
+    //             )),
+    //   );
+    // },
+    //             child: Text('Chi tiết'),
+    //           ),
+    //         ),
+    //       ],
+    //     ),
+    //   ),
+    // );
   }
 }

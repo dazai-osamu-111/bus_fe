@@ -44,10 +44,11 @@ Widget routeDetailHeader(
     String startStationInstruction,
     List<dynamic> transitSteps,
     String fare,
-    int walkDuration, List ticketStationData) {
+    int walkDuration,
+    List ticketStationData) {
   // get current time and directionDetail["duration"] to calculate the arrival time, convert to string
   walkDuration = (walkDuration / 60).round();
- List<dynamic> list_bus = [];
+  List<dynamic> list_bus = [];
   for (int i = 0; i < transitSteps.length; i++) {
     var step = transitSteps[i];
     if (step['travelMode'] == 'TRANSIT') {
@@ -145,22 +146,8 @@ Widget routeDetailHeader(
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  onPressed: () {
-                    showDialog(
-                      context: context,
-                      builder: (BuildContext context) {
-                        return AlertDialog(
-                          title: Text('Thông tin giao dịch'),
-                          content: TransactionDetailForm(
-                            fare: fare,
-                            busListString: busListString,
-                            ticketStationData: ticketStationData,
-                          ),
-                        );
-                      },
-                    );
-                  },
-                  child: Text('Mua vé'),
+                  onPressed: () {},
+                  child: Text('Bắt đầu'),
                 ),
               ],
             ),
@@ -275,7 +262,7 @@ Widget routeDetailHeaderForDirection(
                     // Xử lý sự kiện khi nút được nhấn
                     print('Mua vé button pressed');
                   },
-                  child: Text('Mua vé'),
+                  child: Text('Chi tiết'),
                 ),
               ],
             ),
