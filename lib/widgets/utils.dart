@@ -133,24 +133,26 @@ Widget routeDetailHeader(
                     ),
                   ],
                 ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20.0),
-                    ),
-                    padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                    textStyle: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  onPressed: () {},
-                  child: Text('Bắt đầu'),
-                ),
+
+                // ElevatedButton(
+                //   style: ElevatedButton.styleFrom(
+                //     backgroundColor: Colors.blue,
+                //     foregroundColor: Colors.white,
+                //     shape: RoundedRectangleBorder(
+                //       borderRadius: BorderRadius.circular(20.0),
+                //     ),
+                //     padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                //     textStyle: TextStyle(
+                //       fontSize: 14,
+                //       fontWeight: FontWeight.bold,
+                //     ),
+                //   ),
+                //   onPressed: () {},
+                //   child: Text('Bắt đầu'),
+                // ),
               ],
             ),
+            SizedBox(height: 8), // Khoảng cách nhỏ hơn
           ],
         ),
       ),

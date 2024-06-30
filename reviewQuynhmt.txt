@@ -1,0 +1,6 @@
+- Phần 2 khảo sát: Quỳnh ko viêt phần các sản phẩm hiện tại trên thị trường cũng được nhưng nếu quyết định như vậy thì phải chuẩn bị
+trước cho câu hỏi của các thầy: "Các sản phẩm trên thị trường hiện tại ntn", "sp của em có gì khác biệt"
+- UseCase tổng quan như hiện tại khá nguy hiểm nhé, UseCase thể hiện sự tương tác giữa đối tượng và hệ thống,
+Quỳnh để admin nằm nữa như, các useCase cần được đóng trong khung thể hiện sự khép kín của hệ thống
+- Phần mô tả useCase nên thêm dặc tả dữ liệu cho useCase thay vì chỉ có luồng như hiện tại
+- Phần 3 cần phải trích dẫn nguồn tham khảo trực tiếp vào nội dung.

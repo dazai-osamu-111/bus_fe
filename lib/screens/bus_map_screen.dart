@@ -235,7 +235,7 @@ class _BusMapScreenState extends State<BusMapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Bus Route Map', style: TextStyle(fontFamily: 'Roboto')),
+        title: Text('Vị trí xe buýt', style: TextStyle(fontFamily: 'Roboto')),
       ),
       body: _errorMessage.isNotEmpty
           ? Center(

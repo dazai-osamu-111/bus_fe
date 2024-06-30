@@ -3,19 +3,20 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'dart:ui';
 import 'package:bus_management/screens/bus_information.dart';
+import 'package:bus_management/screens/bus_stop_detail_screen.dart';
 import 'package:bus_management/screens/deposit_screen.dart';
+import 'package:bus_management/screens/feed_back.dart';
 import 'package:bus_management/screens/get_direction.dart';
+import 'package:bus_management/screens/login_screen.dart';
 import 'package:bus_management/screens/search_screen.dart';
-import 'package:bus_management/screens/login_screen.dart'; // Import màn hình đăng nhập
 import 'package:bus_management/screens/ticket_screen.dart';
-import 'package:bus_management/screens/bus_stop_detail_screen.dart'; // Import màn hình chi tiết
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart'; // Import SharedPreferences
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -41,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _checkLoginStatus();
     loadData();
-    _fetchBusStations(); // Gọi hàm lấy thông tin các điểm dừng bus
+    _loadBusStations(); // Tải dữ liệu từ SharedPreferences hoặc gọi API
   }
 
   Future<void> _checkLoginStatus() async {
@@ -74,11 +75,7 @@ class _HomeScreenState extends State<HomeScreen> {
           infoWindow: InfoWindow(title: 'My current location')));
       CameraPosition cameraPosition = CameraPosition(
           zoom: 14, target: LatLng(value.latitude, value.longitude));
-      // zoom: 14,
-      // target: LatLng(21.0054933764515, 105.84567100681808));
-
       final GoogleMapController controller = await _controller.future;
-
       controller.animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
       setState(() {
         _selectedOption = "X";
@@ -89,11 +86,25 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<Position> getUserCurrentLocation() async {
     var status = await Permission.location.request();
     if (status.isGranted) {
-      // Quyền vị trí đã được cấp
       return await Geolocator.getCurrentPosition();
     } else {
-      // Xử lý trường hợp quyền không được cấp
       throw Exception('Location permission denied');
+    }
+  }
+
+  Future<void> _loadBusStations() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? busStationsData = prefs.getString('busStations');
+
+    if (busStationsData != null) {
+      // Dữ liệu đã được lưu trữ trong SharedPreferences
+      setState(() {
+        _busStations = json.decode(busStationsData);
+        _addBusStationMarkers();
+      });
+    } else {
+      // Gọi API để lấy dữ liệu
+      _fetchBusStations();
     }
   }
 
@@ -114,6 +125,9 @@ class _HomeScreenState extends State<HomeScreen> {
             _busStations = result['data'];
             _addBusStationMarkers();
           });
+          // Lưu dữ liệu vào SharedPreferences
+          SharedPreferences prefs = await SharedPreferences.getInstance();
+          await prefs.setString('busStations', json.encode(_busStations));
         } else {
           throw Exception('Failed to load bus stations');
         }
@@ -127,47 +141,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<String> _getBusNumberList(String busNumber) async {
-    String base_url = dotenv.env['BASE_URL'] ?? 'https://defaultapi.com/';
-    final String apiUrl = '$base_url/get_bus_station_by_name?name=$busNumber';
-    try {
-      final response = await http.get(
-        Uri.parse(apiUrl),
-        headers: {
-          'Content-Type': 'application/json; charset=UTF-8',
-        },
-      );
-      if (response.statusCode == 200) {
-        final result = json.decode(utf8.decode(response.bodyBytes));
-        List<dynamic> busNumberList = [];
-
-        if (result['status'] == 200) {
-          for (var station in result['data']) {
-            if (!busNumberList.contains(station['bus_number'])) {
-              busNumberList.add(station['bus_number']);
-            }
-          }
-          String busNumberListString = busNumberList.join(', ');
-          return busNumberListString;
-        } else {
-          throw Exception('Failed to load bus stations');
-        }
-      } else {
-        throw Exception('Failed to load bus stations');
-      }
-    } catch (e) {
-      return 'Error: $e';
-    }
-  }
-
-  // Hàm thêm các markers của các điểm dừng bus vào bản đồ
   void _addBusStationMarkers() async {
     for (var station in _busStations) {
       final markerIcon =
           await _getMarkerIcon(Icons.directions_bus, Colors.blue, 48);
-
-      // String busNumberListString =
-      //     await _getBusNumberList(station['bus_number']);
 
       _markers.add(Marker(
         markerId: MarkerId(station['bus_station_id'].toString()),
@@ -216,7 +193,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return BitmapDescriptor.fromBytes(data!.buffer.asUint8List());
   }
 
-  // Hàm hiển thị thông tin chi tiết của các tuyến bus khi nhấn vào marker
   void _showBusStationDetails(station) {
     Navigator.push(
       context,
@@ -369,7 +345,11 @@ class _HomeScreenState extends State<HomeScreen> {
               leading: Icon(Icons.feedback),
               title: Text('Ý kiến KH'),
               onTap: () {
-                // Xử lý khi chọn Ý kiến KH
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => FeedbackScreen(),
+                  ),
+                );
               },
             ),
             ListTile(
@@ -415,12 +395,11 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
-              // Updated divider with a Container for better visibility
               Container(
-                height: 50, // Adjust the height to fit your layout
+                height: 50,
                 child: VerticalDivider(
-                  color: Colors.grey.shade400, // A color that stands out
-                  width: 2, // The thickness of the divider
+                  color: Colors.grey.shade400,
+                  width: 2,
                 ),
               ),
               Expanded(
@@ -432,11 +411,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                          builder: (context) => GetDirectionScreen(
-                              // title: "Tìm đường",
-                              )),
+                          builder: (context) => GetDirectionScreen()),
                     );
-                    // Xử lý thêm khi chọn Tìm đường
                   },
                   child: Container(
                     decoration: BoxDecoration(
@@ -468,16 +444,15 @@ class _HomeScreenState extends State<HomeScreen> {
                   zoomControlsEnabled: false,
                 ),
                 Positioned(
-                  top: 10, // Điều chỉnh vị trí từ trên xuống
-                  left: 20, // Điều chỉnh vị trí từ trái qua
-                  right: 20, // Điều chỉnh vị trí từ phải qua
+                  top: 10,
+                  left: 20,
+                  right: 20,
                   child: Visibility(
                     visible: _selectedOption == "X" ? true : false,
                     child: SizedBox(
                         height: 40,
                         child: GestureDetector(
                           onTap: () {
-                            // Sử dụng Navigator để chuyển đến màn hình tìm kiếm
                             Navigator.push(
                               context,
                               MaterialPageRoute(
@@ -488,13 +463,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           },
                           child: AbsorbPointer(
                             child: TextField(
-                              // Thay thế bằng controller của bạn
                               decoration: InputDecoration(
                                 labelText: 'Tìm kiếm điểm dừng',
-                                fillColor: Colors.white, // Màu nền trắng
-                                filled: true, // Kích hoạt nền màu
-                                prefixIcon:
-                                    Icon(Icons.search), // Biểu tượng kính lúp
+                                fillColor: Colors.white,
+                                filled: true,
+                                prefixIcon: Icon(Icons.search),
                                 contentPadding: EdgeInsets.symmetric(
                                     vertical: 4.0, horizontal: 8.0),
                                 border: OutlineInputBorder(
@@ -517,12 +490,8 @@ class _HomeScreenState extends State<HomeScreen> {
         onPressed: () async {
           getUserCurrentLocation().then((value) async {
             CameraPosition cameraPosition = CameraPosition(
-                // zoom: 14, target: LatLng(value.latitude, value.longitude));
-                zoom: 14,
-                target: LatLng(21.007416569485482, 105.8426221378807));
-
+                zoom: 14, target: LatLng(value.latitude, value.longitude));
             final GoogleMapController controller = await _controller.future;
-
             controller
                 .animateCamera(CameraUpdate.newCameraPosition(cameraPosition));
           });

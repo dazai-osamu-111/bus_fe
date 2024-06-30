@@ -1,3 +1,4 @@
+import 'package:bus_management/screens/map_detail_screen.dart';
 import 'package:bus_management/widgets/function_util.dart';
 import 'package:bus_management/widgets/utils.dart';
 import 'package:flutter/cupertino.dart';
@@ -9,13 +10,15 @@ class DirectionDetailScreen extends StatefulWidget {
   String startLocation = '';
   String endLocation = '';
   String fare = '';
+  String encodePolyline = '';
 
   DirectionDetailScreen(
       {Key? key,
       required this.directionDetail,
       required this.startLocation,
       required this.endLocation,
-      required this.fare})
+      required this.fare,
+      required this.encodePolyline})
       : super(key: key);
   @override
   _DirectionDetailScreenState createState() => _DirectionDetailScreenState();
@@ -219,65 +222,62 @@ class _DirectionDetailScreenState extends State<DirectionDetailScreen> {
 
     return Scaffold(
       appBar: AppBar(
-          title: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Text(
-                    'từ ',
-                    style: TextStyle(fontWeight: FontWeight.w300, fontSize: 14),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'từ ',
+                  style: TextStyle(fontWeight: FontWeight.w300, fontSize: 14),
+                ),
+                Expanded(
+                  child: Text(
+                    startLocation,
+                    style: TextStyle(fontSize: 14, color: Colors.black),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  Expanded(
-                    child: Text(
-                      startLocation,
-                      style: TextStyle(fontSize: 14, color: Colors.black),
-                      overflow: TextOverflow.ellipsis,
-                    ),
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                Text(
+                  'đến ',
+                  style: TextStyle(fontWeight: FontWeight.w300, fontSize: 14),
+                ),
+                Expanded(
+                  child: Text(
+                    endLocation,
+                    style: TextStyle(fontSize: 14, color: Colors.black),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-              ),
-              Row(
-                children: [
-                  Text(
-                    'đến ',
-                    style: TextStyle(fontWeight: FontWeight.w300, fontSize: 14),
-                  ),
-                  Expanded(
-                    child: Text(
-                      endLocation,
-                      style: TextStyle(fontSize: 14, color: Colors.black),
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          leading: IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          )),
-      body:
-          // Column for the header and the list of
-          // timeline tiles for the direction details
-          Column(
+                ),
+              ],
+            ),
+          ],
+        ),
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context);
+          },
+        ),
+      ),
+      body: Column(
         children: <Widget>[
           routeDetailHeader(
-              context,
-              combinedTimeString,
-              travelTimeInMinutes,
-              busStopDepartureTime,
-              startStationInstruction,
-              transitSteps,
-              fare,
-              walkDuration,
-              ticketStationData),
-          SizedBox(
-            height: 16,
+            context,
+            combinedTimeString,
+            travelTimeInMinutes,
+            busStopDepartureTime,
+            startStationInstruction,
+            transitSteps,
+            fare,
+            walkDuration,
+            ticketStationData,
           ),
+          SizedBox(height: 16),
           Expanded(
             child: SingleChildScrollView(
               child: Column(
@@ -287,8 +287,45 @@ class _DirectionDetailScreenState extends State<DirectionDetailScreen> {
               ),
             ),
           ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+              textStyle: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => MapDetailScreen(
+                    encodedPolyline: widget.encodePolyline,
+                    transitStepsDetail: transitStepsDetail,
+                    combinedTimeString: combinedTimeString,
+                    travelTimeInMinutes: travelTimeInMinutes,
+                    busStopDepartureTime: busStopDepartureTime,
+                    startStationInstruction: startStationInstruction,
+                    transitSteps: transitSteps,
+                    fare: fare,
+                    walkDuration: walkDuration,
+                    ticketStationData: ticketStationData,
+                    startLocation: startLocation,
+                    endLocation: endLocation,
+                  ),
+                ),
+              );
+            },
+            child: Text('Bắt đầu'),
+          ),
         ],
       ),
     );
   }
 }
+

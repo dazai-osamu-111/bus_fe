@@ -136,7 +136,8 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
                           ),
                           child: BusInfoCard(
                             routeNumber: bus['bus_number'],
-                            routeName: 'Tài xế: ${bus['driver_name']}',
+                            routeName:
+                                'Bắc Ninh - Long Biên', // Placeholder route name
                             direction:
                                 bus['direction'] == 0 ? 'Lượt đi' : 'Lượt về',
                             eta: '${bus['time_to_station'].round()} phút',
@@ -144,6 +145,9 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
                             distance:
                                 '${bus['distance_to_station'].toStringAsFixed(1)} km',
                             plateNumber: bus['driver_name'],
+                            currentPassengerAmount:
+                                bus['current_passenger_amount'],
+                            maxPassengerAmount: bus['max_passenger_amount'],
                           ),
                         );
                       },
@@ -152,7 +156,7 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
             children: [
               GestureDetector(
                 onTap: () => _showRouteDetail(
-                    context, '37', 'Bến xe Giáp Bát - Chương Mỹ'),
+                    context, '01', 'Bến xe Giáp Bát - Chương Mỹ'),
                 child: RouteInfoCard(
                   routeNumber: '37',
                   routeName: 'Bến xe Giáp Bát - Chương Mỹ',
@@ -193,6 +197,8 @@ class BusInfoCard extends StatelessWidget {
   final String speed;
   final String distance;
   final String plateNumber;
+  final int currentPassengerAmount;
+  final int maxPassengerAmount;
 
   BusInfoCard({
     required this.routeNumber,
@@ -202,27 +208,46 @@ class BusInfoCard extends StatelessWidget {
     required this.speed,
     required this.distance,
     required this.plateNumber,
+    required this.currentPassengerAmount,
+    required this.maxPassengerAmount,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
       margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      elevation: 4.0,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
           children: [
-            CircleAvatar(
-              radius: 35,
-              backgroundColor: Colors.blue,
-              child: Text(
-                routeNumber,
-                style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 20,
-                    fontFamily: 'Roboto'), // Ensure font supports Vietnamese
-              ),
+            Column(
+              children: [
+                CircleAvatar(
+                  radius: 35,
+                  backgroundColor: Colors.blue,
+                  child: Text(
+                    routeNumber,
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                        fontFamily:
+                            'Roboto'), // Ensure font supports Vietnamese
+                  ),
+                ),
+                Text(
+                  plateNumber,
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.black54,
+                      fontFamily: 'Roboto'), // Ensure font supports Vietnamese
+                ),
+              ],
             ),
             SizedBox(width: 16),
             Expanded(
@@ -259,9 +284,9 @@ class BusInfoCard extends StatelessWidget {
                               color: Colors.black87,
                               fontSize: 14,
                               fontFamily: 'Roboto')),
-                      SizedBox(width: 16),
+                      SizedBox(width: 8),
                       Icon(Icons.location_on, size: 16, color: Colors.grey),
-                      SizedBox(width: 4),
+                      SizedBox(width: 2),
                       Text(distance,
                           style: TextStyle(
                               color: Colors.black87,
@@ -269,14 +294,17 @@ class BusInfoCard extends StatelessWidget {
                               fontFamily: 'Roboto')),
                     ],
                   ),
-                  SizedBox(height: 8),
-                  plateNumber.isNotEmpty
-                      ? Text('Biển số: $plateNumber',
+                  Row(
+                    children: [
+                      Icon(Icons.person, size: 16, color: Colors.grey),
+                      SizedBox(width: 4),
+                      Text('$currentPassengerAmount/$maxPassengerAmount',
                           style: TextStyle(
-                              color: Colors.blue,
+                              color: Colors.black87,
                               fontSize: 14,
-                              fontFamily: 'Roboto'))
-                      : Container(),
+                              fontFamily: 'Roboto')),
+                    ],
+                  )
                 ],
               ),
             ),
@@ -320,7 +348,11 @@ class RouteInfoCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12.0),
+      ),
       margin: EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
+      elevation: 4.0,
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Row(
@@ -339,21 +371,29 @@ class RouteInfoCard extends StatelessWidget {
             ),
             SizedBox(width: 16),
             Expanded(
-              child: Text(
-                routeName,
-                style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
-                    color: Colors.black87,
-                    fontFamily: 'Roboto'), // Ensure font supports Vietnamese
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    routeName,
+                    style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontFamily:
+                            'Roboto'), // Ensure font supports Vietnamese
+                  ),
+                  Text(direction,
+                      style: TextStyle(
+                          color: direction == 'Lượt đi'
+                              ? Colors.green
+                              : Colors.orange,
+                          fontSize: 14,
+                          fontFamily:
+                              'Roboto')), // Ensure font supports Vietnamese
+                ],
               ),
             ),
-            Text(direction,
-                style: TextStyle(
-                    color:
-                        direction == 'Lượt đi' ? Colors.green : Colors.orange,
-                    fontSize: 14,
-                    fontFamily: 'Roboto')), // Ensure font supports Vietnamese
           ],
         ),
       ),

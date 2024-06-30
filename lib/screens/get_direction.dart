@@ -262,6 +262,7 @@ class _GetDirectionScreen extends State<GetDirectionScreen> {
         setState(() {
           schedules =
               (jsonDecode(response.body)["routes"] as List).map((route) {
+            String encodePolyline = route["polyline"]["encodedPolyline"];
             DateTime currentTime = DateTime.now();
             var durationText = route["localizedValues"]["duration"]["text"];
             var duration = int.parse(durationText.split(" ")[0]);
@@ -286,6 +287,7 @@ class _GetDirectionScreen extends State<GetDirectionScreen> {
               detail: route["legs"],
               startLocation: startLocationText,
               endLocation: endLocationText,
+              encodePolyline: encodePolyline,
             );
           }).toList();
         });
@@ -328,6 +330,7 @@ class BusSchedule {
   final List<dynamic> detail;
   final String startLocation;
   final String endLocation;
+  final String encodePolyline;
 
   BusSchedule(
       {required this.time,
@@ -337,7 +340,8 @@ class BusSchedule {
       required this.fare,
       required this.detail,
       required this.startLocation,
-      required this.endLocation});
+      required this.endLocation,
+      required this.encodePolyline});
 }
 
 class BusScheduleCard extends StatelessWidget {
@@ -373,6 +377,14 @@ class BusScheduleCard extends StatelessWidget {
         startStationInstruction =
             step['transitDetails']['stopDetails']['departureStop']['name'];
         break;
+      }
+    }
+
+    for (var step in steps) {
+      if (step['travelMode'] == 'WALK') {
+        int durationInSeconds =
+            int.tryParse(step['staticDuration'].replaceAll('s', '')) ?? 0;
+        walkDuration += durationInSeconds;
       }
     }
 
@@ -513,6 +525,7 @@ class BusScheduleCard extends StatelessWidget {
                                   startLocation: schedule.startLocation,
                                   endLocation: schedule.endLocation,
                                   fare: schedule.fare,
+                                  encodePolyline: schedule.encodePolyline,
                                 )),
                       );
                     },
