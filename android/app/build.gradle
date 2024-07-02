@@ -64,4 +64,6 @@ flutter {
     source '../..'
 }
 
-dependencies {}
+dependencies {
+    implementation 'com.github.momodevelopment:androidsdkV2.2:1.1'
+}

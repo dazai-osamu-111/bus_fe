@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:flutter/services.dart';
 
 class DepositScreen extends StatefulWidget {
   @override
@@ -16,6 +17,24 @@ class _DepositScreenState extends State<DepositScreen> {
   String _selectedPaymentMethod = 'Momo Wallet';
   String _token = '';
   int _userId = 1;
+  static const platform =
+      const MethodChannel('com.example.bus_management/momo');
+
+  Future<void> _requestPayment() async {
+    try {
+      final response = await platform.invokeMethod('requestPayment', {
+        'amount': _amountController.text,
+        'merchantName': 'Demo SDK',
+        'merchantCode': 'SCB01',
+        'description': 'Thanh toán dịch vụ ABC',
+        'deeplink':
+            'momo://app?action=payWithApp&isScanQR=false&serviceType=app&sid=TU9NT3w0ODVmOWJkOS00NjRmLTRhNDktODM0Mi02YTM5YzMxZDJlZWQ&v=3.0'
+      });
+      // Handle response here
+    } on PlatformException catch (e) {
+      // Handle error here
+    }
+  }
 
   @override
   void initState() {
@@ -157,7 +176,7 @@ class _DepositScreenState extends State<DepositScreen> {
             SizedBox(height: 20),
             Center(
               child: ElevatedButton(
-                onPressed: _deposit,
+                onPressed: _requestPayment,
                 child: Text('Nạp tiền'),
                 style: ElevatedButton.styleFrom(
                   foregroundColor: Colors.white,
