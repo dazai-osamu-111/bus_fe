@@ -6,8 +6,7 @@ import android.os.Bundle
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
-import vn.momo.momo_partner.AppMoMoLib
-import vn.momo.momo_partner.MoMoParameterNameMap
+import android.util.Log 
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.example.bus_management/momo"
@@ -16,13 +15,9 @@ class MainActivity : FlutterActivity() {
         super.configureFlutterEngine(flutterEngine)
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL).setMethodCallHandler { call, result ->
             if (call.method == "requestPayment") {
-                val amount = call.argument<String>("amount")
-                val merchantName = call.argument<String>("merchantName")
-                val merchantCode = call.argument<String>("merchantCode")
-                val description = call.argument<String>("description")
                 val deeplink = call.argument<String>("deeplink")
 
-                if (amount != null && merchantName != null && merchantCode != null && description != null && deeplink != null) {
+                if (deeplink != null) {
                     requestPayment(deeplink)
                     result.success("Payment requested")
                 } else {
@@ -44,28 +39,25 @@ class MainActivity : FlutterActivity() {
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == AppMoMoLib.getInstance().REQUEST_CODE_MOMO && resultCode == -1) {
-            if (data != null) {
-                val status = data.getIntExtra("status", -1)
-                if (status == 0) {
-                    // TOKEN IS AVAILABLE
-                    val token = data.getStringExtra("data")
-                    val phoneNumber = data.getStringExtra("phonenumber")
-                    val env = data.getStringExtra("env") ?: "app"
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
 
-                    if (!token.isNullOrEmpty()) {
-                        // TODO: send phoneNumber & token to your server side to process payment with MoMo server
-                    } else {
-                        // Handle error
-                    }
-                } else {
-                    val message = data.getStringExtra("message") ?: "Thất bại"
-                    // Handle error
-                }
-            } else {
-                // Handle error
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent) {
+        val action: String? = intent.action
+        val data: Uri? = intent.data
+
+        if (Intent.ACTION_VIEW == action && data != null) {
+            val orderId = data.getQueryParameter("orderId")
+            if (orderId != null) {
+                Log.d("MainActivity", "Payment callback received: orderId = $orderId")
+                MethodChannel(flutterEngine!!.dartExecutor.binaryMessenger, CHANNEL).invokeMethod("onPaymentCallback", orderId)
             }
         }
     }

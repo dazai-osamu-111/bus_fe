@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'dart:ui';
 import 'package:bus_management/screens/bus_information.dart';
 import 'package:bus_management/screens/bus_stop_detail_screen.dart';
+import 'package:bus_management/screens/buy_ticket.dart';
 import 'package:bus_management/screens/deposit_screen.dart';
 import 'package:bus_management/screens/feed_back.dart';
 import 'package:bus_management/screens/get_direction.dart';
@@ -325,9 +326,12 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
             ListTile(
               leading: Icon(Icons.local_offer),
-              title: Text('Vé tháng'),
+              title: Text('Mua vé'),
               onTap: () {
-                // Xử lý khi chọn Mua tem
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => BuyTicketScreen()),
+                );
               },
             ),
             ListTile(

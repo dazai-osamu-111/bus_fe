@@ -12,11 +12,13 @@ class BusMapScreen extends StatefulWidget {
   final String busNumber;
   final int direction;
   final LatLng currentBusLocation;
+  final String name;
 
   BusMapScreen({
     required this.busNumber,
     required this.direction,
     required this.currentBusLocation,
+    required this.name,
   });
 
   @override
@@ -132,12 +134,13 @@ class _BusMapScreenState extends State<BusMapScreen> {
   }
 
   void _addPolyline(List<LatLng> points) {
+    Color polylineColor = widget.direction == 0 ? Colors.blue : Colors.orange;
     setState(() {
       _polylines.add(
         Polyline(
           polylineId: PolylineId('route_${_polylines.length}'),
           points: points,
-          color: Colors.orange,
+          color: polylineColor,
           width: 5,
         ),
       );
@@ -191,15 +194,18 @@ class _BusMapScreenState extends State<BusMapScreen> {
         await _getMarkerIcon(Icons.directions_bus, Colors.red, 40);
     final currentBusIcon =
         await _getAssetIcon('assets/icons/bus_icon.png', 50, 50);
+    final selectedStopIcon =
+        await _getMarkerIcon(Icons.directions_bus, Colors.green, 40);
 
     setState(() {
       _markers = stops.map((stop) {
         int index = stops.indexOf(stop);
+        bool isSelectedStop = stop['name'] == widget.name;
         return Marker(
           markerId: MarkerId('$index'),
           position: LatLng(stop['latitude'], stop['longitude']),
           infoWindow: InfoWindow(title: stop['name']),
-          icon: busStopIcon, // Icon điểm dừng xe buýt
+          icon: isSelectedStop ? selectedStopIcon : busStopIcon,
         );
       }).toSet();
 
@@ -208,7 +214,7 @@ class _BusMapScreenState extends State<BusMapScreen> {
           markerId: MarkerId('bus'),
           position: widget.currentBusLocation,
           infoWindow: InfoWindow(title: 'Current Bus Location'),
-          icon: currentBusIcon, // Icon vị trí xe buýt
+          icon: currentBusIcon,
         ),
       );
 

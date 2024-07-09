@@ -22,6 +22,7 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   List<dynamic> _upcomingBuses = [];
+  List<dynamic> _busRoutes = [];
   bool _isLoading = true;
   String _errorMessage = '';
 
@@ -30,6 +31,7 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _fetchUpcomingBuses();
+    _fetchBusRoutes();
   }
 
   @override
@@ -43,9 +45,14 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
     final url =
         '$baseUrl/get_upcoming_bus_information?bus_station_name=${widget.name}';
     try {
-      final response = await http.get(Uri.parse(url));
+      final response = await http.get(
+        Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
       if (response.statusCode == 200) {
-        final data = json.decode(response.body);
+        final data = json.decode(utf8.decode(response.bodyBytes));
         if (data['status'] == 200) {
           setState(() {
             _upcomingBuses = data['upcoming_buses'];
@@ -71,13 +78,53 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
     }
   }
 
+  Future<void> _fetchBusRoutes() async {
+    String baseUrl = dotenv.env['BASE_URL'] ?? 'https://defaultapi.com/';
+    final url = '$baseUrl/get_bus_station_by_name?name=${widget.name}';
+    try {
+      final response = await http.get(
+        Uri.parse(url),
+        headers: <String, String>{
+          'Content-Type': 'application/json; charset=UTF-8',
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = json.decode(utf8.decode(response.bodyBytes));
+        if (data['status'] == 200) {
+          setState(() {
+            _busRoutes = data['data'];
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage = 'Không có thông tin tuyến bus.';
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage = 'Không có thông tin tuyến bus.';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Lỗi kết nối đến server.';
+        _isLoading = false;
+      });
+    }
+  }
+
   void _showRouteDetail(
       BuildContext context, String routeNumber, String routeName) {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) =>
-            RouteDetailScreen(routeNumber: routeNumber, routeName: routeName),
+        builder: (context) => RouteDetailScreen(
+          routeNumber: routeNumber,
+          routeName: routeName,
+          direction: 0,
+        ),
       ),
     );
   }
@@ -88,6 +135,7 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
       context,
       MaterialPageRoute(
         builder: (context) => BusMapScreen(
+          name: widget.name,
           busNumber: busNumber,
           direction: direction,
           currentBusLocation: currentBusLocation,
@@ -136,8 +184,7 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
                           ),
                           child: BusInfoCard(
                             routeNumber: bus['bus_number'],
-                            routeName:
-                                'Bắc Ninh - Long Biên', // Placeholder route name
+                            routeName: bus['bus_number_name'],
                             direction:
                                 bus['direction'] == 0 ? 'Lượt đi' : 'Lượt về',
                             eta: '${bus['time_to_station'].round()} phút',
@@ -152,37 +199,29 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
                         );
                       },
                     ),
-          ListView(
-            children: [
-              GestureDetector(
-                onTap: () => _showRouteDetail(
-                    context, '01', 'Bến xe Giáp Bát - Chương Mỹ'),
-                child: RouteInfoCard(
-                  routeNumber: '37',
-                  routeName: 'Bến xe Giáp Bát - Chương Mỹ',
-                  direction: 'Lượt về',
-                ),
-              ),
-              GestureDetector(
-                onTap: () =>
-                    _showRouteDetail(context, '104', 'Mỹ Đình - BX Nước Ngầm'),
-                child: RouteInfoCard(
-                  routeNumber: '104',
-                  routeName: 'Mỹ Đình - BX Nước Ngầm',
-                  direction: 'Lượt đi',
-                ),
-              ),
-              GestureDetector(
-                onTap: () => _showRouteDetail(
-                    context, '106', 'KĐT Mỗ Lao - TTTM Aeon Mall Long Biên'),
-                child: RouteInfoCard(
-                  routeNumber: '106',
-                  routeName: 'KĐT Mỗ Lao - TTTM Aeon Mall Long Biên',
-                  direction: 'Lượt đi',
-                ),
-              ),
-            ],
-          ),
+          _isLoading
+              ? Center(child: CircularProgressIndicator())
+              : _busRoutes.isEmpty
+                  ? Center(
+                      child: Text(_errorMessage,
+                          style: TextStyle(fontFamily: 'Roboto')))
+                  : ListView.builder(
+                      itemCount: _busRoutes.length,
+                      itemBuilder: (context, index) {
+                        final busRoute = _busRoutes[index];
+                        return GestureDetector(
+                          onTap: () => _showRouteDetail(context,
+                              busRoute['bus_number'], busRoute['name']),
+                          child: RouteInfoCard(
+                            routeNumber: busRoute['bus_number'],
+                            routeName: busRoute['name'],
+                            direction: busRoute['direction'] == 0
+                                ? 'Lượt đi'
+                                : 'Lượt về',
+                          ),
+                        );
+                      },
+                    ),
         ],
       ),
     );
@@ -235,8 +274,7 @@ class BusInfoCard extends StatelessWidget {
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 20,
-                        fontFamily:
-                            'Roboto'), // Ensure font supports Vietnamese
+                        fontFamily: 'Roboto'),
                   ),
                 ),
                 Text(
@@ -245,7 +283,7 @@ class BusInfoCard extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                       color: Colors.black54,
-                      fontFamily: 'Roboto'), // Ensure font supports Vietnamese
+                      fontFamily: 'Roboto'),
                 ),
               ],
             ),
@@ -260,8 +298,7 @@ class BusInfoCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: Colors.black87,
-                        fontFamily:
-                            'Roboto'), // Ensure font supports Vietnamese
+                        fontFamily: 'Roboto'),
                   ),
                   SizedBox(height: 4),
                   Text(
@@ -271,8 +308,7 @@ class BusInfoCard extends StatelessWidget {
                             ? Colors.green
                             : Colors.orange,
                         fontSize: 14,
-                        fontFamily:
-                            'Roboto'), // Ensure font supports Vietnamese
+                        fontFamily: 'Roboto'),
                   ),
                   SizedBox(height: 8),
                   Row(
@@ -316,14 +352,12 @@ class BusInfoCard extends StatelessWidget {
                       color: Colors.green,
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
-                      fontFamily: 'Roboto'), // Ensure font supports Vietnamese
+                      fontFamily: 'Roboto'),
                 ),
                 Text(
                   eta.split(' ')[1],
                   style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 12,
-                      fontFamily: 'Roboto'), // Ensure font supports Vietnamese
+                      color: Colors.green, fontSize: 12, fontFamily: 'Roboto'),
                 ),
               ],
             ),
@@ -366,7 +400,7 @@ class RouteInfoCard extends StatelessWidget {
                     color: Colors.white,
                     fontWeight: FontWeight.bold,
                     fontSize: 20,
-                    fontFamily: 'Roboto'), // Ensure font supports Vietnamese
+                    fontFamily: 'Roboto'),
               ),
             ),
             SizedBox(width: 16),
@@ -380,8 +414,7 @@ class RouteInfoCard extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                         color: Colors.black87,
-                        fontFamily:
-                            'Roboto'), // Ensure font supports Vietnamese
+                        fontFamily: 'Roboto'),
                   ),
                   Text(direction,
                       style: TextStyle(
@@ -389,8 +422,7 @@ class RouteInfoCard extends StatelessWidget {
                               ? Colors.green
                               : Colors.orange,
                           fontSize: 14,
-                          fontFamily:
-                              'Roboto')), // Ensure font supports Vietnamese
+                          fontFamily: 'Roboto')),
                 ],
               ),
             ),

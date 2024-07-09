@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'package:app_links/app_links.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,29 +19,136 @@ class _DepositScreenState extends State<DepositScreen> {
   String _selectedPaymentMethod = 'Momo Wallet';
   String _token = '';
   int _userId = 1;
-  static const platform =
-      const MethodChannel('com.example.bus_management/momo');
+  static const platform = MethodChannel('com.example.bus_management/momo');
 
-  Future<void> _requestPayment() async {
-    try {
-      final response = await platform.invokeMethod('requestPayment', {
-        'amount': _amountController.text,
-        'merchantName': 'Demo SDK',
-        'merchantCode': 'SCB01',
-        'description': 'Thanh toán dịch vụ ABC',
-        'deeplink':
-            'momo://app?action=payWithApp&isScanQR=false&serviceType=app&sid=TU9NT3w0ODVmOWJkOS00NjRmLTRhNDktODM0Mi02YTM5YzMxZDJlZWQ&v=3.0'
-      });
-      // Handle response here
-    } on PlatformException catch (e) {
-      // Handle error here
-    }
-  }
+  late AppLinks _appLinks;
+  StreamSubscription<Uri>? _sub;
 
   @override
   void initState() {
     super.initState();
     _initialize();
+    _appLinks = AppLinks();
+    _handleIncomingLinks();
+    platform.setMethodCallHandler(_handleMethodCall);
+  }
+
+  @override
+  void dispose() {
+    _sub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _handleMethodCall(MethodCall call) async {
+    switch (call.method) {
+      case 'onPaymentCallback':
+        print(
+            "Received callback from Momo: ${call.arguments}"); // orderId (String
+        final String orderId = call.arguments;
+        _checkPaymentStatus(orderId, double.parse(_amountController.text));
+        break;
+      default:
+        print('Unknown method ${call.method}');
+    }
+  }
+
+  void _handleIncomingLinks() {
+    _sub = _appLinks.uriLinkStream.listen((Uri? uri) {
+      if (uri != null) {
+        // Kiểm tra uri.path hoặc uri.queryParameters để xử lý callback từ Momo
+        if (uri.host == 'momo_callback') {
+          // Xử lý callback ở đây
+          final orderId = uri.queryParameters['orderId'];
+          if (orderId != null) {
+            _checkPaymentStatus(orderId, double.parse(_amountController.text));
+          }
+        }
+      }
+    }, onError: (err) {
+      // Xử lý lỗi
+    });
+  }
+
+  Future<void> _requestPayment() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? _token = prefs.getString('token');
+    final amount = int.parse(_amountController.text);
+    final String baseUrl = dotenv.env['BASE_URL'] ?? 'https://defaultapi.com/';
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/momo?amount=${amount}'),
+      headers: {
+        'Authorization': 'Token ${_token}',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      final deeplink = data['deeplink'];
+      final orderId = data['orderId'];
+      final callbackUrl =
+          'example://momo_callback?orderId=$orderId'; // Đảm bảo sử dụng đúng deeplink
+
+      try {
+        final result = await platform.invokeMethod('requestPayment',
+            {'deeplink': deeplink, 'callbackUrl': callbackUrl});
+
+        if (result == 'success') {
+          // Chờ đến khi người dùng quay lại ứng dụng và xử lý callback
+        } else {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Thanh toán thất bại')),
+          );
+        }
+      } on PlatformException catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi: ${e.message}')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi khi yêu cầu thanh toán Momo')),
+      );
+    }
+  }
+
+  Future<void> _checkPaymentStatus(String orderId, double amount) async {
+    final String baseUrl = dotenv.env['BASE_URL'] ?? 'https://defaultapi.com/';
+
+    while (true) {
+      final response = await http.get(
+        Uri.parse('$baseUrl/momo_status?orderId=$orderId'),
+        headers: {
+          'Authorization': 'Token $_token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final resultCode = data['resultCode'];
+
+        if (resultCode == 0) {
+          // Giao dịch thành công, gọi API deposit
+          await _deposit(amount);
+          break;
+        } else if (resultCode != 1000) {
+          // Giao dịch thất bại
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Giao dịch thất bại')),
+          );
+          break;
+        }
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Lỗi khi kiểm tra trạng thái thanh toán')),
+        );
+        break;
+      }
+
+      // Chờ 2 giây trước khi kiểm tra lại
+      await Future.delayed(Duration(seconds: 2));
+    }
   }
 
   Future<void> _initialize() async {
@@ -88,9 +197,8 @@ class _DepositScreenState extends State<DepositScreen> {
     }
   }
 
-  Future<void> _deposit() async {
+  Future<void> _deposit(double amount) async {
     final String baseUrl = dotenv.env['BASE_URL'] ?? 'https://defaultapi.com/';
-    final amount = double.parse(_amountController.text);
 
     final response = await http.post(
       Uri.parse('$baseUrl/deposit'),

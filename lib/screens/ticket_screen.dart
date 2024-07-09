@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:http/http.dart' as http;
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class TicketScreen extends StatefulWidget {
   final int userId;
@@ -16,21 +17,26 @@ class TicketScreen extends StatefulWidget {
 class _TicketScreenState extends State<TicketScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late Future<List<Ticket>> _futureTickets;
+  late Future<List<Ticket>> _futureMonthlyTickets;
+  late Future<List<Ticket>> _futureDailyTickets;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _futureTickets = fetchTickets(widget.userId);
+    _tabController = TabController(length: 2, vsync: this);
+    _futureMonthlyTickets = fetchTickets(widget.userId, 0);
+    _futureDailyTickets = fetchTickets(widget.userId, 1);
   }
 
-  Future<List<Ticket>> fetchTickets(int userId) async {
+  Future<List<Ticket>> fetchTickets(int userId, int ticketType) async {
     final String baseUrl = dotenv.env['BASE_URL'] ?? 'https://defaultapi.com/';
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? _token = prefs.getString('token');
     final response = await http.get(
-      Uri.parse('$baseUrl/user_tickets?user_id=$userId'),
+      Uri.parse('$baseUrl/user_tickets?ticket_type=$ticketType&status=0'),
       headers: <String, String>{
         'Content-Type': 'application/json; charset=UTF-8',
+        'Authorization': 'Token $_token',
       },
     );
 
@@ -51,54 +57,61 @@ class _TicketScreenState extends State<TicketScreen>
         bottom: TabBar(
           controller: _tabController,
           tabs: [
-            Tab(text: 'Đã mua'),
-            Tab(text: 'Đã sử dụng'),
-            Tab(text: 'Hết hạn'),
+            Tab(text: 'Vé tháng'),
+            Tab(text: 'Vé ngày'),
           ],
         ),
       ),
-      body: FutureBuilder<List<Ticket>>(
-        future: _futureTickets,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('Không có vé nào.'));
-          }
-
-          final tickets = snapshot.data!;
-          return TabBarView(
-            controller: _tabController,
-            children: [
-              buildTicketList(
-                  tickets.where((ticket) => ticket.status == 0).toList()),
-              buildTicketList(
-                  tickets.where((ticket) => ticket.status == 1).toList()),
-              buildTicketList(
-                  tickets.where((ticket) => ticket.status == 2).toList()),
-            ],
-          );
-        },
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          buildFutureBuilder(_futureMonthlyTickets, true),
+          buildFutureBuilder(_futureDailyTickets, false),
+        ],
       ),
     );
   }
 
-  Widget buildTicketList(List<Ticket> tickets) {
+  Widget buildFutureBuilder(
+      Future<List<Ticket>> futureTickets, bool isMonthly) {
+    return FutureBuilder<List<Ticket>>(
+      future: futureTickets,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Center(child: Text('Error: ${snapshot.error}'));
+        } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          return Center(child: Text('Không có vé nào.'));
+        }
+
+        final tickets = snapshot.data!;
+        return buildTicketList(tickets, isMonthly);
+      },
+    );
+  }
+
+  Widget buildTicketList(List<Ticket> tickets, bool isMonthly) {
     return ListView.builder(
       itemCount: tickets.length,
       itemBuilder: (context, index) {
         final ticket = tickets[index];
         return GestureDetector(
-          onTap: () => showQrCode(ticket.ticketId.toString()),
-          child: TicketCard(ticket: ticket),
+          onTap: () => showQrCode(ticket),
+          child: TicketCard(ticket: ticket, isMonthly: isMonthly),
         );
       },
     );
   }
 
-  void showQrCode(String data) {
+  void showQrCode(Ticket ticket) {
+    final data = jsonEncode({
+      'ticket_id': ticket.ticketId,
+      'type': ticket.ticketType == 0 ? 'monthly' : 'daily',
+      'price': ticket.price,
+      'valid_to': ticket.validTo,
+    });
+
     showDialog(
       context: context,
       builder: (context) {
@@ -108,6 +121,7 @@ class _TicketScreenState extends State<TicketScreen>
             child: QrImageView(
               data: data,
               size: 200.0,
+              foregroundColor: Colors.blue, // Tạo QR code với màu xanh
             ),
           ),
           actions: <Widget>[
@@ -129,44 +143,52 @@ class Ticket {
   final String busNumber;
   final int status;
   final double price;
+  final int ticketType;
+  final String validTo;
 
   Ticket({
     required this.ticketId,
     required this.busNumber,
     required this.status,
     required this.price,
+    required this.ticketType,
+    required this.validTo,
   });
 
   factory Ticket.fromJson(Map<String, dynamic> json) {
     return Ticket(
       ticketId: json['ticket_id'],
-      busNumber: json['bus_number'],
+      busNumber: json['bus_number'] ?? '',
       status: json['status'],
       price: json['price'],
+      ticketType: json['ticket_type'],
+      validTo: json['valid_to'],
     );
   }
 
   String getStatusText() {
+    if (ticketType == 0) {
+      return 'Vé tháng';
+    }
     switch (status) {
       case 0:
         return 'Đã mua';
       case 1:
         return 'Đã dùng';
-      case 2:
-        return 'Hết hạn';
       default:
         return 'Không xác định';
     }
   }
 
   Color getStatusColor() {
+    if (ticketType == 0) {
+      return Colors.blue;
+    }
     switch (status) {
       case 0:
         return Colors.blue;
       case 1:
         return Colors.green;
-      case 2:
-        return Colors.red;
       default:
         return Colors.grey;
     }
@@ -175,13 +197,18 @@ class Ticket {
 
 class TicketCard extends StatelessWidget {
   final Ticket ticket;
+  final bool isMonthly;
 
-  TicketCard({required this.ticket});
+  TicketCard({required this.ticket, required this.isMonthly});
 
   @override
   Widget build(BuildContext context) {
     return Card(
       margin: EdgeInsets.all(10.0),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15.0),
+      ),
+      elevation: 5,
       child: Padding(
         padding: EdgeInsets.all(15.0),
         child: Row(
@@ -189,6 +216,7 @@ class TicketCard extends StatelessWidget {
             QrImageView(
               data: ticket.ticketId.toString(),
               size: 50.0,
+              foregroundColor: Colors.blue, // Tạo QR code với màu xanh
             ),
             SizedBox(width: 15.0),
             Expanded(
@@ -202,8 +230,10 @@ class TicketCard extends StatelessWidget {
                       fontSize: 18.0,
                     ),
                   ),
-                  SizedBox(height: 10.0),
-                  Text('Mã xe bus: ${ticket.busNumber}'),
+                  if (!isMonthly) ...[
+                    SizedBox(height: 10.0),
+                    Text('Mã xe bus: ${ticket.busNumber}'),
+                  ],
                   SizedBox(height: 10.0),
                   Text(
                     'Trạng thái: ${ticket.getStatusText()}',
@@ -214,6 +244,10 @@ class TicketCard extends StatelessWidget {
                   ),
                   SizedBox(height: 10.0),
                   Text('Giá: ${ticket.price.toStringAsFixed(0)} Đ'),
+                  if (isMonthly) ...[
+                    SizedBox(height: 10.0),
+                    Text('Hiệu lực tới: ${ticket.validTo}'),
+                  ],
                 ],
               ),
             ),
