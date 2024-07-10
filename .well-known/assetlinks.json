@@ -1,0 +1,9 @@
+[{
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.example.bus_management",
+      "sha256_cert_fingerprints":
+      [" 1D:15:CE:84:41:F6:02:01:86:C5:99:E6:55:33:76:38:BB:D7:6F:07:F0:CC:4A:59:5E:49:B8:00:79:20:55:B0"]
+    }
+  }]

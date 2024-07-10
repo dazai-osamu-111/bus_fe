@@ -9,6 +9,8 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:flutter/services.dart';
 
 class DepositScreen extends StatefulWidget {
+  final String? orderId;
+  const DepositScreen({Key? key, this.orderId}) : super(key: key);
   @override
   _DepositScreenState createState() => _DepositScreenState();
 }

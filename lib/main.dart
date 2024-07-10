@@ -1,6 +1,8 @@
+import 'package:bus_management/screens/deposit_screen.dart';
 import 'package:bus_management/screens/home_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:go_router/go_router.dart';
 
 Future<void> main() async {
   try {
@@ -17,14 +19,31 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    final GoRouter _router = GoRouter(
+      routes: [
+        GoRoute(
+          path: '/',
+          builder: (context, state) => const HomeScreen(),
+        ),
+        // Bạn có thể thêm nhiều tuyến đường khác ở đây
+        GoRoute(
+          path: '/momo_callback',
+          builder: (context, state) {
+            final orderId = state
+                .queryParams['orderId']; // Ensure queryParams is used correctly
+            return DepositScreen(orderId: orderId);
+          },
+        ),
+      ],
+    );
+
+    return MaterialApp.router(
       title: 'Flutter Demo',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const HomeScreen(),
-      // home: const DirectionDetailScreen(),
+      routerConfig: _router,
     );
   }
 }
