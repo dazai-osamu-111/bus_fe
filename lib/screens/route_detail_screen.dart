@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:timelines/timelines.dart';
 
-class RouteDetailScreen extends StatelessWidget {
+class RouteDetailScreen extends StatefulWidget {
   final String routeNumber;
   final String routeName;
   final int direction;
@@ -12,10 +13,143 @@ class RouteDetailScreen extends StatelessWidget {
       required this.direction});
 
   @override
+  _RouteDetailScreenState createState() => _RouteDetailScreenState();
+}
+
+class _RouteDetailScreenState extends State<RouteDetailScreen>
+    with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+
+  final List<String> _stops = [
+    'Điểm cuối Chương Mỹ',
+    'UBND huyện Chương Mỹ',
+    'Công an huyện Chương Mỹ',
+    'Trường THCS Biên Giang',
+    'Nhà thờ Biên Giang',
+    'Trạm Xăng Mai Linh'
+  ];
+
+  final List<String> _times = ['05:00', '05:15', '05:30', '05:40', '05:50'];
+
+  final String _info = """
+Đơn vị chủ quản:
+Trung tâm Tân Đạt - Transerco
+
+Giãn cách chạy xe:
+12-15-20 phút/chuyến
+
+Giá vé:
+7000 VNĐ/Lượt
+
+Thời gian hoạt động:
+T2 - T6: 05:00 - 21:00
+T7: 05:00 - 21:00
+CN: 05:05 - 21:00
+
+Chiều đi:
+Công viên Nghĩa Đô - Nguyễn Văn Huyên - Nguyễn Khánh Toàn - Đào Tấn - Liễu Giai - Nguyễn Chí Thanh - Huỳnh Thúc Kháng - Thái Hà - Chùa Bộc - Tôn Thất Tùng - Lê Trọng Tấn - Trần Điền - Định Công - Giải Phóng - Ngọc Hồi - Quốc lộ 1 - Cầu Ngọc Hồi - Xã Ngọc Hồi - Đường mới xã Đại Áng - Khánh Hà (Thường Tín).
+""";
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Widget _buildStopsTimeline() {
+    return ListView.builder(
+      itemCount: _stops.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            children: [
+              Column(
+                children: [
+                  if (index != 0)
+                    Container(
+                      width: 2,
+                      height: 20,
+                      color: Colors.blue,
+                    ),
+                  Icon(Icons.directions_bus, color: Colors.blue),
+                  if (index != _stops.length - 1)
+                    Container(
+                      width: 2,
+                      height: 20,
+                      color: Colors.blue,
+                    ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(_stops[index]),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildTimesTimeline() {
+    return ListView.builder(
+      itemCount: _times.length,
+      itemBuilder: (context, index) {
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: Row(
+            children: [
+              Column(
+                children: [
+                  if (index != 0)
+                    Container(
+                      width: 2,
+                      height: 20,
+                      color: Colors.blue,
+                    ),
+                  Icon(Icons.access_time, color: Colors.blue),
+                  if (index != _times.length - 1)
+                    Container(
+                      width: 2,
+                      height: 20,
+                      color: Colors.blue,
+                    ),
+                ],
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(_times[index]),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Tuyến: $routeNumber'),
+        backgroundColor: Colors.blue,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: () => Navigator.of(context).pop(),
+        ),
+        title: Text('Tuyến: ${widget.routeNumber}'),
       ),
       body: Column(
         children: [
@@ -23,55 +157,60 @@ class RouteDetailScreen extends StatelessWidget {
             height: 200,
             child: GoogleMap(
               initialCameraPosition: CameraPosition(
-                target: LatLng(21.0285, 105.8542),
+                target: LatLng(
+                    20.841933, 106.743362), // Toạ độ ví dụ, bạn có thể thay đổi
                 zoom: 14,
               ),
+              zoomControlsEnabled: false,
+              mapType: MapType.normal,
+              myLocationButtonEnabled: false,
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Text(
-              '$routeName',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(8.0),
+          Container(
+            padding: EdgeInsets.all(8.0),
+            color: Colors.white,
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                ElevatedButton(onPressed: () {}, child: Text('Giờ xuất bến')),
-                ElevatedButton(onPressed: () {}, child: Text('Điểm dừng')),
-                ElevatedButton(onPressed: () {}, child: Text('Thông tin')),
+                Text(
+                  widget.routeName,
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+                Spacer(),
+                ElevatedButton(
+                  onPressed: () {},
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                  ),
+                  child: Text(widget.direction == 0 ? 'Chiều đi' : 'Chiều về'),
+                ),
               ],
             ),
           ),
           Expanded(
-            child: ListView(
+            child: Column(
               children: [
-                ListTile(
-                  leading: Icon(Icons.location_on),
-                  title: Text('Điểm cuối Chương Mỹ'),
+                TabBar(
+                  controller: _tabController,
+                  tabs: [
+                    Tab(text: 'Giờ xuất bến'),
+                    Tab(text: 'Điểm dừng'),
+                    Tab(text: 'Thông tin'),
+                  ],
                 ),
-                ListTile(
-                  leading: Icon(Icons.location_on),
-                  title: Text('UBND huyện Chương Mỹ'),
-                ),
-                ListTile(
-                  leading: Icon(Icons.location_on),
-                  title: Text('Công an huyện Chương Mỹ'),
-                ),
-                ListTile(
-                  leading: Icon(Icons.location_on),
-                  title: Text('Trường THCS Biên Giang'),
-                ),
-                ListTile(
-                  leading: Icon(Icons.location_on),
-                  title: Text('Nhà thờ Biên Giang'),
-                ),
-                ListTile(
-                  leading: Icon(Icons.location_on),
-                  title: Text('Trạm Xăng Mai Linh'),
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildTimesTimeline(),
+                      _buildStopsTimeline(),
+                      SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(_info),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
@@ -80,76 +219,4 @@ class RouteDetailScreen extends StatelessWidget {
       ),
     );
   }
-}
-
-void _showRouteDetail(
-    BuildContext context, String routeNumber, String routeName) {
-  Navigator.push(
-    context,
-    MaterialPageRoute(
-      builder: (context) => RouteDetailScreen(
-        routeNumber: routeNumber,
-        routeName: routeName,
-        direction: 0,
-      ),
-    ),
-  );
-}
-
-class RouteInfoCard extends StatelessWidget {
-  final String routeNumber;
-  final String routeName;
-  final String direction;
-
-  RouteInfoCard(
-      {required this.routeNumber,
-      required this.routeName,
-      required this.direction});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: ListTile(
-        title: Text('$routeNumber: $routeName'),
-        subtitle: Text(direction),
-      ),
-    );
-  }
-}
-
-class BusRoutesScreen extends StatelessWidget {
-  final List<Map<String, dynamic>> _busRoutes = [
-    {'bus_number': '37', 'name': 'Bến xe Giáp Bát - Chương Mỹ', 'direction': 0},
-    // Add more bus routes here
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Bus Routes'),
-      ),
-      body: ListView.builder(
-        itemCount: _busRoutes.length,
-        itemBuilder: (context, index) {
-          final busRoute = _busRoutes[index];
-          return GestureDetector(
-            onTap: () => _showRouteDetail(
-                context, busRoute['bus_number'], busRoute['name']),
-            child: RouteInfoCard(
-              routeNumber: busRoute['bus_number'],
-              routeName: busRoute['name'],
-              direction: busRoute['direction'] == 0 ? 'Lượt đi' : 'Lượt về',
-            ),
-          );
-        },
-      ),
-    );
-  }
-}
-
-void main() {
-  runApp(MaterialApp(
-    home: BusRoutesScreen(),
-  ));
 }

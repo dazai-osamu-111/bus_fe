@@ -90,8 +90,8 @@ class _DepositScreenState extends State<DepositScreen> {
           'example://momo_callback?orderId=$orderId'; // Đảm bảo sử dụng đúng deeplink
 
       try {
-        final result = await platform.invokeMethod('requestPayment',
-            {'deeplink': deeplink, 'callbackUrl': callbackUrl});
+        final result = await platform
+            .invokeMethod('requestPayment', {'deeplink': deeplink});
 
         if (result == 'success') {
           // Chờ đến khi người dùng quay lại ứng dụng và xử lý callback

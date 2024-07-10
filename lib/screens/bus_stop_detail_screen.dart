@@ -120,11 +120,8 @@ class _BusStopDetailScreenState extends State<BusStopDetailScreen>
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => RouteDetailScreen(
-          routeNumber: routeNumber,
-          routeName: routeName,
-          direction: 0,
-        ),
+        builder: (context) =>
+            RouteDetailScreen(routeNumber: routeNumber, routeName: routeName, direction: 0,),
       ),
     );
   }
