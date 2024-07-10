@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class FeedbackScreen extends StatefulWidget {
   @override
@@ -11,6 +14,35 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
   String? _name;
   String? _email;
   String? _feedback;
+
+  Future<void> _submitFeedback() async {
+    final String baseUrl = dotenv.env['BASE_URL'] ?? 'https://defaultapi.com/';
+    final url = '$baseUrl/feedback'; // Thay thế bằng URL API thực tế của bạn
+    final response = await http.post(
+      Uri.parse(url),
+      headers: <String, String>{
+        'Content-Type': 'application/json; charset=UTF-8',
+      },
+      body: jsonEncode(<String, String>{
+        'user_name': _name!,
+        'content': _feedback!,
+      }),
+    );
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Phản hồi của bạn đã được gửi thành công'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Gửi phản hồi thất bại, vui lòng thử lại sau'),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,11 +159,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
                         _formKey.currentState!.save();
-                        // Handle feedback submission logic here
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                              content: Text('Phản hồi của bạn đã được gửi')),
-                        );
+                        _submitFeedback();
                       }
                     },
                   ),

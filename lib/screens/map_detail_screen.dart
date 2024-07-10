@@ -52,8 +52,12 @@ class _MapDetailScreenState extends State<MapDetailScreen> {
   List _busStations = [];
   final List<Marker> _markers = <Marker>[];
   late StreamSubscription<Position> _positionStream;
+  late StreamSubscription<ServiceStatus> _serviceStatusStream;
+  late StreamSubscription<Position> _headingStream;
   LatLng _currentPosition = LatLng(0, 0);
   BitmapDescriptor? _currentLocationMarker;
+  double _heading = 0.0;
+  bool _shouldMoveCamera = false;
 
   @override
   void initState() {
@@ -67,6 +71,7 @@ class _MapDetailScreenState extends State<MapDetailScreen> {
   @override
   void dispose() {
     _positionStream.cancel();
+    _headingStream.cancel();
     super.dispose();
   }
 
@@ -170,24 +175,38 @@ class _MapDetailScreenState extends State<MapDetailScreen> {
 
   Future<void> _initCurrentLocationMarker() async {
     _currentLocationMarker =
-        await _getMarkerIcon(Icons.my_location, Colors.red, 48);
+        await _getMarkerIcon(Icons.navigation, Colors.red, 48);
   }
 
   void _trackUserLocation() {
     _positionStream =
-        Geolocator.getPositionStream().listen((Position position) {
+        Geolocator.getPositionStream(desiredAccuracy: LocationAccuracy.high)
+            .listen((Position position) {
       setState(() {
         _currentPosition = LatLng(position.latitude, position.longitude);
 
+        _markers.removeWhere(
+            (marker) => marker.markerId.value == 'currentLocation');
         _markers.add(Marker(
           markerId: MarkerId('currentLocation'),
           position: _currentPosition,
           infoWindow: InfoWindow(title: 'Vị trí hiện tại của bạn'),
           icon: _currentLocationMarker ?? BitmapDescriptor.defaultMarker,
+          rotation: _heading, // Update rotation based on heading
         ));
       });
 
-      _moveCameraToCurrentLocation();
+      if (_shouldMoveCamera) {
+        _moveCameraToCurrentLocation();
+      }
+    });
+
+    _headingStream = Geolocator.getPositionStream(
+      desiredAccuracy: LocationAccuracy.high,
+    ).listen((Position position) {
+      setState(() {
+        _heading = position.heading!;
+      });
     });
   }
 
@@ -195,7 +214,7 @@ class _MapDetailScreenState extends State<MapDetailScreen> {
     final GoogleMapController controller = await _controller.future;
     controller.animateCamera(
       CameraUpdate.newCameraPosition(
-        CameraPosition(target: _currentPosition, zoom: 14),
+        CameraPosition(target: _currentPosition, zoom: 14, bearing: _heading),
       ),
     );
   }
@@ -309,6 +328,19 @@ class _MapDetailScreenState extends State<MapDetailScreen> {
                 ),
               );
             },
+          ),
+          Positioned(
+            bottom: 20,
+            right: 20,
+            child: FloatingActionButton(
+              onPressed: () {
+                setState(() {
+                  _shouldMoveCamera = true;
+                });
+                _moveCameraToCurrentLocation();
+              },
+              child: Icon(Icons.my_location),
+            ),
           ),
         ],
       ),
@@ -862,7 +894,7 @@ class _MapDetailScreenState extends State<MapDetailScreen> {
                           style:
                               TextStyle(fontSize: 14, color: Colors.black54)),
                       SizedBox(width: 24),
-                      Icon(Icons.directions_walk, size: 16),
+                      Icon(Icons.directions_walk, size: 40),
                       Text(
                         '${walkDuration} p',
                         style: TextStyle(fontSize: 14, color: Colors.black54),
